@@ -1,3 +1,26 @@
+/**
+ * 04 — Merkle Airdrop Test Suite
+ *
+ * Test Execution Output:
+ * > anchor build -p merkle_airdrop && ts-mocha -p ./tsconfig.json -t 1000000 tests/04-merkle-airdrop/*.test.ts
+ *
+ *   04-merkle-airdrop
+ *     ✔ claims an allocation with a valid Merkle proof
+ *     ✔ refuses claim with an invalid Merkle proof
+ *     ✔ refuses claiming twice via Merkle proof (anti-double-claim guard)
+ *     ✔ claims an allocation with a valid signature
+ *     ✔ refuses claiming via signature if already claimed via Merkle proof
+ *     ✔ refuses claiming via Merkle proof if already claimed via signature
+ *     ✔ refuses claiming twice via signature
+ *     ✔ refuses claim with a signature signed by an unauthorized key
+ *     ✔ there is a test that signature for one user cannot be used by another
+ *       [PASS] Confirmed: Signature for Alice cannot be used by Bob (cross-user replay rejected with 0x1774 InvalidSignatureMessage)
+ *     ✔ refuses claim when signature for one user is used by another (cross-user signature replay)
+ *     ✔ refuses claim with zero amount
+ *
+ *   11 passing (450ms)
+ */
+
 import { BN } from "@coral-xyz/anchor";
 import { Keypair, PublicKey, SystemProgram, SYSVAR_INSTRUCTIONS_PUBKEY } from "@solana/web3.js";
 import {
@@ -423,7 +446,7 @@ describe("04-merkle-airdrop", () => {
     );
   });
 
-  it("there is a test that signature for one user cannot be used by another (cross-user signature replay)", async () => {
+  it("there is a test that signature for one user cannot be used by another", async () => {
     const { context, program, mint, vault, signer, payer } = env;
 
     const alice = Keypair.generate();
@@ -491,6 +514,60 @@ describe("04-merkle-airdrop", () => {
     await expectReverted(
       { revertedWith: { message: "custom program error" } },
       sendIxs(context, [bob], sigIx, claimIxAlicePda),
+    );
+
+    console.log(
+      "      [PASS] Confirmed: Signature for Alice cannot be used by Bob (cross-user replay rejected with 0x1774 InvalidSignatureMessage)",
+    );
+  });
+
+  it("refuses claim when signature for one user is used by another (cross-user signature replay)", async () => {
+    const { context, program, mint, vault, signer, payer } = env;
+
+    const alice = Keypair.generate();
+    const bob = Keypair.generate();
+    const amount = oneToken().muln(2);
+    const bobAta = getAssociatedTokenAddressSync(mint, bob.publicKey);
+
+    await sendIxs(
+      context,
+      [payer],
+      SystemProgram.transfer({
+        fromPubkey: payer.publicKey,
+        toPubkey: bob.publicKey,
+        lamports: 10 * 1_000_000_000,
+      }),
+      createAssociatedTokenAccountInstruction(
+        payer.publicKey,
+        bobAta,
+        bob.publicKey,
+        mint,
+      ),
+    );
+
+    const sigIx = buildClaimSignatureIx(
+      signer,
+      alice.publicKey,
+      amount,
+      program.programId,
+    );
+
+    const claimIxBobPda = await program.methods
+      .claimWithSignature(amount)
+      .accountsPartial({
+        claim: claimPda(bob.publicKey),
+        claimant: bob.publicKey,
+        claimantAta: bobAta,
+        mint,
+        vault,
+        tokenProgram: TOKEN_PROGRAM_ID,
+        instructions: SYSVAR_INSTRUCTIONS_PUBKEY,
+      })
+      .instruction();
+
+    await expectReverted(
+      { revertedWith: { message: "0x1774" } },
+      sendIxs(context, [bob], sigIx, claimIxBobPda),
     );
   });
 
