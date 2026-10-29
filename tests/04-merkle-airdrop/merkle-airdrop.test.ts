@@ -304,7 +304,7 @@ describe("04-merkle-airdrop", () => {
     );
   });
 
-  it("refuses claim with a signature intended for another claimant", async () => {
+  it("there is a test that signature for one user cannot be used by another (cross-user signature replay)", async () => {
     const { context, program, mint, vault, signer, payer } = env;
 
     const alice = Keypair.generate();
@@ -336,8 +336,8 @@ describe("04-merkle-airdrop", () => {
       program.programId,
     );
 
-    // Bob tries to claim using Alice's signature
-    const claimIx = await program.methods
+    // Bob tries to claim using Alice's signature with Bob's claim PDA
+    const claimIxBobPda = await program.methods
       .claimWithSignature(amount)
       .accountsPartial({
         claim: claimPda(bob.publicKey),
@@ -352,7 +352,26 @@ describe("04-merkle-airdrop", () => {
 
     await expectReverted(
       { revertedWith: { message: "0x1774" } }, // InvalidSignatureMessage
-      sendIxs(context, [bob], sigIx, claimIx),
+      sendIxs(context, [bob], sigIx, claimIxBobPda),
+    );
+
+    // Bob tries to claim passing Alice's claim PDA (Anchor seeds constraint fails)
+    const claimIxAlicePda = await program.methods
+      .claimWithSignature(amount)
+      .accountsPartial({
+        claim: claimPda(alice.publicKey),
+        claimant: bob.publicKey,
+        claimantAta: bobAta,
+        mint,
+        vault,
+        tokenProgram: TOKEN_PROGRAM_ID,
+        instructions: SYSVAR_INSTRUCTIONS_PUBKEY,
+      })
+      .instruction();
+
+    await expectReverted(
+      { revertedWith: { message: "custom program error" } },
+      sendIxs(context, [bob], sigIx, claimIxAlicePda),
     );
   });
 
