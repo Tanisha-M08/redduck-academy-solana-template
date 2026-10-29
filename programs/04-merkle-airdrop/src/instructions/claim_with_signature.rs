@@ -21,7 +21,7 @@ pub struct ClaimWithSignature<'info> {
     pub config: Account<'info, Config>,
 
     #[account(
-        init_if_needed,
+        init,
         payer = claimant,
         space = 8 + Claim::INIT_SPACE,
         seeds = [CLAIM_SEED, claimant.key().as_ref()],
@@ -53,7 +53,6 @@ pub struct ClaimWithSignature<'info> {
 }
 
 pub fn claim_with_signature(ctx: Context<ClaimWithSignature>, amount: u64) -> Result<()> {
-    require!(!ctx.accounts.claim.claimed, MerkleError::AlreadyClaimed);
     require!(amount > 0, MerkleError::ZeroAmount);
 
     // 1. Inspect preceding Ed25519 instruction in current transaction
@@ -115,7 +114,6 @@ pub fn claim_with_signature(ctx: Context<ClaimWithSignature>, amount: u64) -> Re
     // 3. Mark claimant as claimed
     ctx.accounts.claim.set_inner(Claim {
         claimant: ctx.accounts.claimant.key(),
-        claimed: true,
         bump: ctx.bumps.claim,
     });
 

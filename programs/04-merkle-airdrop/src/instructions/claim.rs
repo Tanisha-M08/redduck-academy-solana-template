@@ -20,7 +20,7 @@ pub struct ClaimMerkle<'info> {
     pub config: Account<'info, Config>,
 
     #[account(
-        init_if_needed,
+        init,
         payer = claimant,
         space = 8 + Claim::INIT_SPACE,
         seeds = [CLAIM_SEED, claimant.key().as_ref()],
@@ -48,7 +48,6 @@ pub struct ClaimMerkle<'info> {
 }
 
 pub fn claim(ctx: Context<ClaimMerkle>, amount: u64, proof: Vec<[u8; 32]>) -> Result<()> {
-    require!(!ctx.accounts.claim.claimed, MerkleError::AlreadyClaimed);
     require!(amount > 0, MerkleError::ZeroAmount);
 
     // 1. Verify Merkle Proof
@@ -72,7 +71,6 @@ pub fn claim(ctx: Context<ClaimMerkle>, amount: u64, proof: Vec<[u8; 32]>) -> Re
     // 2. Mark claimant as claimed
     ctx.accounts.claim.set_inner(Claim {
         claimant: ctx.accounts.claimant.key(),
-        claimed: true,
         bump: ctx.bumps.claim,
     });
 

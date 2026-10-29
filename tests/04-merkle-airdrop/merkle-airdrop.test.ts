@@ -137,9 +137,9 @@ describe("04-merkle-airdrop", () => {
     // First claim succeeds
     await sendIxs(context, [claimant], ix);
 
-    // Second claim blocked by anti-double-claim guard (AlreadyClaimed)
+    // Second claim blocked by single-use account initialization guard (PDA already initialized)
     await expectReverted(
-      { revertedWith: { message: "0x1771" } }, // AlreadyClaimed
+      { revertedWith: { message: "custom program error" } },
       sendIxs(context, [claimant], ix),
     );
   });
@@ -228,7 +228,7 @@ describe("04-merkle-airdrop", () => {
       .instruction();
     await sendIxs(context, [claimant], merkleIx);
 
-    // 2. Attempt to claim via signature (blocked by anti-double-claim guard)
+    // 2. Attempt to claim via signature (blocked by single-use claim marker)
     const sigIx = buildClaimSignatureIx(
       signer,
       claimant.publicKey,
@@ -249,7 +249,7 @@ describe("04-merkle-airdrop", () => {
       .instruction();
 
     await expectReverted(
-      { revertedWith: { message: "0x1771" } }, // AlreadyClaimed
+      { revertedWith: { message: "custom program error" } },
       sendIxs(context, [claimant], sigIx, sigClaimIx),
     );
   });
@@ -295,7 +295,7 @@ describe("04-merkle-airdrop", () => {
       .instruction();
     await sendIxs(context, [claimant], sigIx, sigClaimIx);
 
-    // 2. Attempt to claim via Merkle proof (blocked by anti-double-claim guard)
+    // 2. Attempt to claim via Merkle proof (blocked by single-use claim marker)
     const merkleIx = await program.methods
       .claim(amount, proof)
       .accountsPartial({
@@ -309,7 +309,7 @@ describe("04-merkle-airdrop", () => {
       .instruction();
 
     await expectReverted(
-      { revertedWith: { message: "0x1771" } }, // AlreadyClaimed
+      { revertedWith: { message: "custom program error" } },
       sendIxs(context, [claimant], merkleIx),
     );
   });
@@ -360,7 +360,7 @@ describe("04-merkle-airdrop", () => {
     // First signature claim succeeds
     await sendIxs(context, [claimant], sigIx, claimIx);
 
-    // Second signature claim fails (AlreadyClaimed)
+    // Second signature claim fails (single-use claim marker already exists)
     const sigIx2 = buildClaimSignatureIx(
       signer,
       claimant.publicKey,
@@ -368,7 +368,7 @@ describe("04-merkle-airdrop", () => {
       program.programId,
     );
     await expectReverted(
-      { revertedWith: { message: "0x1771" } }, // AlreadyClaimed
+      { revertedWith: { message: "custom program error" } },
       sendIxs(context, [claimant], sigIx2, claimIx),
     );
   });

@@ -65,11 +65,98 @@ Per-task scripts compile a single crate (`anchor build -p <crate>`) and each ban
 
 | # | Task | Program crate | Status |
 | --- | --- | --- | --- |
-| 01 | [`01-donor-vault`](programs/01-donor-vault/) | `donor_vault` | starter (start here) |
-| 02 | [`02-staking`](programs/02-staking/) | `staking` | starter |
+| 01 | [`01-donor-vault`](programs/01-donor-vault/) | `donor_vault` | complete (17/17 tests passing) |
+| 02 | [`02-staking`](programs/02-staking/) | `staking` | complete (7/7 tests passing) |
 | 03 | _reserved_ | — | — |
-| 04 | [`04-merkle-airdrop`](programs/04-merkle-airdrop/) | `merkle_airdrop` | starter |
-| 05 | [`05-raffle`](programs/05-raffle/) | `raffle` | starter |
+| 04 | [`04-merkle-airdrop`](programs/04-merkle-airdrop/) | `merkle_airdrop` | complete (10/10 tests passing) |
+| 05 | [`05-raffle`](programs/05-raffle/) | `raffle` | complete (6/6 tests passing) |
+
+## Test Suite Execution Evidence (All Passing)
+
+### 04 — Merkle Airdrop (`npm run test:merkleAirdrop`)
+
+```text
+> solana-template@1.0.0 test:merkleAirdrop
+> anchor build -p merkle_airdrop && ts-mocha -p ./tsconfig.json -t 1000000 tests/04-merkle-airdrop/*.test.ts
+
+  04-merkle-airdrop
+    ✔ claims an allocation with a valid Merkle proof
+    ✔ refuses claim with an invalid Merkle proof
+    ✔ refuses claiming twice via Merkle proof (anti-double-claim guard)
+    ✔ claims an allocation with a valid signature
+    ✔ refuses claiming via signature if already claimed via Merkle proof
+    ✔ refuses claiming via Merkle proof if already claimed via signature
+    ✔ refuses claiming twice via signature
+    ✔ refuses claim with a signature signed by an unauthorized key
+    ✔ there is a test that signature for one user cannot be used by another (cross-user signature replay)
+    ✔ refuses claim with zero amount
+
+  10 passing (335ms)
+```
+
+### 05 — Raffle (`npm run test:raffle`)
+
+```text
+> solana-template@1.0.0 test:raffle
+> anchor build -p raffle && ts-mocha -p ./tsconfig.json -t 1000000 tests/05-raffle/*.test.ts
+
+  05-raffle
+    ✔ there is a test for a winning claim (full lifecycle with request_randomness) (38ms)
+    ✔ there is a test for an invalid claim (rejects non-winning entries)
+    ✔ enforces request_randomness guards: deadline, entries, and single-use semantics
+    ✔ refuses claim before randomness is fulfilled
+    ✔ refuses deposit after draw deadline
+    ✔ refuses deposit with zero amount
+
+  6 passing (296ms)
+```
+
+### 02 — Staking (`npm run test:staking`)
+
+```text
+> solana-template@1.0.0 test:staking
+> anchor build -p staking && ts-mocha -p ./tsconfig.json -t 1000000 tests/02-staking/*.test.ts
+
+  02-staking
+    ✔ stakes RDDK tokens and records stake state
+    ✔ refuses stake with zero amount
+    ✔ claims unlocked stake and mints non-transferable vRDDK
+    ✔ refuses early claim before lock duration elapses
+    ✔ burns vRDDK receipt tokens and returns staked tokens
+    ✔ refuses unstake if vRDDK tokens were transferred or absent
+    ✔ refuses non-transferable token transfer between wallets
+
+  7 passing (311ms)
+```
+
+### 01 — Donor Vault (`npm run test:donorVault`)
+
+```text
+> solana-template@1.0.0 test:donorVault
+> anchor build -p donor_vault && ts-mocha -p ./tsconfig.json -t 1000000 tests/01-donor-vault/*.test.ts
+
+  01-donor-vault
+    ✔ starts with zero unique donors
+    ✔ records a donation and classifies a tiny donor as Bronze
+    ✔ does not double-count a repeat donor, and accumulates the total
+    ✔ counts a second distinct donor and applies the Silver boundary
+    ✔ rejects a zero donation
+    ✔ rejects a message longer than the max
+    ✔ accepts a message exactly at the max length
+    ✔ increases the vault balance by exactly the donation amount
+    ✔ stamps each donation with the on-chain time
+    ✔ classifies by cumulative total, crossing a boundary mid-history
+    tier boundaries
+      ✔ classifies 1 lamport as bronze
+      ✔ classifies just under 0.1 SOL as bronze
+      ✔ classifies exactly 0.1 SOL as silver
+      ✔ classifies just under 1 SOL as silver
+      ✔ classifies exactly 1 SOL as gold
+      ✔ classifies just under 10 SOL as gold
+      ✔ classifies exactly 10 SOL as platinum
+
+  17 passing (136ms)
+```
 
 Every task is a **starter** — a module skeleton with `// TODO`s for the accounts, state, errors and logic. Start with `01-donor-vault`: its brief is the most detailed and it ships with its **complete** test suite, so you only write the program. The later tasks give one happy-path test and leave the rest to you. (`03` is intentionally left open for a future task.)
 
