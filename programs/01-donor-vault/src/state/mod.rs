@@ -1,13 +1,9 @@
-pub fn from_total(total: u64) -> Self {
-    if total == 0 {
-        Self::None
-    } else if total < 100_000_000 {
-        Self::Bronze
-    } else if total < 1_000_000_000 {
-        Self::Silver
-    } else if total < 10_000_000_000 {
-        Self::Gold
-    } else {
-        Self::Platinum
-    }
-}
+pub mod donation;
+pub mod donor_record;
+pub mod tier;
+pub mod vault;
+
+pub use donation::*;
+pub use donor_record::*;
+pub use tier::*;
+pub use vault::*;

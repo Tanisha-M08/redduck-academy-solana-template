@@ -1,5 +1,52 @@
 # Test Suite Execution Outputs
 
+### 01 — Donor Vault (`npm run test:donorVault`)
+
+```text
+> solana-template@1.0.0 test:donorVault
+> anchor build -p donor_vault && ts-mocha -p ./tsconfig.json -t 1000000 tests/01-donor-vault/*.test.ts
+
+  01-donor-vault
+    ✔ starts with zero unique donors
+    ✔ records a donation and classifies a tiny donor as Bronze
+    ✔ does not double-count a repeat donor, and accumulates the total
+    ✔ counts a second distinct donor and applies the Silver boundary
+    ✔ rejects a zero donation
+    ✔ rejects a message longer than the max
+    ✔ accepts a message exactly at the max length
+    ✔ increases the vault balance by exactly the donation amount
+    ✔ stamps each donation with the on-chain time
+    ✔ classifies by cumulative total, crossing a boundary mid-history
+    tier boundaries
+      ✔ classifies 1 lamport as bronze
+      ✔ classifies just under 0.1 SOL as bronze
+      ✔ classifies exactly 0.1 SOL as silver
+      ✔ classifies just under 1 SOL as silver
+      ✔ classifies exactly 1 SOL as gold
+      ✔ classifies just under 10 SOL as gold
+      ✔ classifies exactly 10 SOL as platinum
+
+  17 passing (136ms)
+```
+
+### 02 — Staking (`npm run test:staking`)
+
+```text
+> solana-template@1.0.0 test:staking
+> anchor build -p staking && ts-mocha -p ./tsconfig.json -t 1000000 tests/02-staking/*.test.ts
+
+  02-staking
+    ✔ stakes RDDK tokens and records stake state
+    ✔ refuses stake with zero amount
+    ✔ claims unlocked stake and mints non-transferable vRDDK
+    ✔ refuses early claim before lock duration elapses
+    ✔ burns vRDDK receipt tokens and returns staked tokens
+    ✔ refuses unstake if vRDDK tokens were transferred or absent
+    ✔ refuses non-transferable token transfer between wallets
+
+  7 passing (311ms)
+```
+
 ### 04 — Merkle Airdrop (`npm run test:merkleAirdrop`)
 
 ```text
@@ -36,38 +83,4 @@
     ✔ refuses deposit with zero amount
 
   6 passing (296ms)
-```
-
-### 02 — Staking (`npm run test:staking`)
-
-```text
-> solana-template@1.0.0 test:staking
-> anchor build -p staking && ts-mocha -p ./tsconfig.json -t 1000000 tests/02-staking/*.test.ts
-
-  02-staking
-    ✔ stakes RDDK tokens and records stake state
-    ✔ refuses stake with zero amount
-    ✔ claims unlocked stake and mints non-transferable vRDDK
-    ✔ refuses early claim before lock duration elapses
-    ✔ burns vRDDK receipt tokens and returns staked tokens
-    ✔ refuses unstake if vRDDK tokens were transferred or absent
-    ✔ refuses non-transferable token transfer between wallets
-
-  7 passing (311ms)
-```
-
-### 01 — Donor Vault (`npm run test:donorVault`)
-
-```text
-> solana-template@1.0.0 test:donorVault
-> anchor build -p donor_vault && ts-mocha -p ./tsconfig.json -t 1000000 tests/01-donor-vault/*.test.ts
-
-  01-donor-vault
-    ✔ starts with zero unique donors
-    ✔ records a donation and classifies a tiny donor as Bronze
-    ✔ records repeated donations from the same donor
-    ✔ elevates tier as total donations grow
-    ✔ handles multiple donors independently
-
-  5 passing (150ms)
 ```

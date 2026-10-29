@@ -1,5 +1,6 @@
 use anchor_lang::prelude::*;
-use crate::{Vault, VAULT_SEED};
+use crate::constants::VAULT_SEED;
+use crate::state::Vault;
 
 #[derive(Accounts)]
 pub struct Initialize<'info> {
@@ -8,7 +9,7 @@ pub struct Initialize<'info> {
         payer = payer,
         space = 8 + Vault::INIT_SPACE,
         seeds = [VAULT_SEED],
-        bump
+        bump,
     )]
     pub vault: Account<'info, Vault>,
 
