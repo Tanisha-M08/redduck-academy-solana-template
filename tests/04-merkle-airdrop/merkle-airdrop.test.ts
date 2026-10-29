@@ -103,7 +103,7 @@ describe("04-merkle-airdrop", () => {
     );
   });
 
-  it("refuses claiming twice via Merkle proof", async () => {
+  it("refuses claiming twice via Merkle proof (anti-double-claim guard)", async () => {
     const { context, program, mint, vault, entries, tree, claimants } = env;
 
     const claimant = claimants[0];
@@ -137,9 +137,9 @@ describe("04-merkle-airdrop", () => {
     // First claim succeeds
     await sendIxs(context, [claimant], ix);
 
-    // Second claim fails (PDA already initialized)
+    // Second claim blocked by anti-double-claim guard (AlreadyClaimed)
     await expectReverted(
-      { revertedWith: { message: "custom program error" } },
+      { revertedWith: { message: "0x1771" } }, // AlreadyClaimed
       sendIxs(context, [claimant], ix),
     );
   });
@@ -228,7 +228,7 @@ describe("04-merkle-airdrop", () => {
       .instruction();
     await sendIxs(context, [claimant], merkleIx);
 
-    // 2. Attempt to claim via signature
+    // 2. Attempt to claim via signature (blocked by anti-double-claim guard)
     const sigIx = buildClaimSignatureIx(
       signer,
       claimant.publicKey,
@@ -249,8 +249,127 @@ describe("04-merkle-airdrop", () => {
       .instruction();
 
     await expectReverted(
-      { revertedWith: { message: "custom program error" } },
+      { revertedWith: { message: "0x1771" } }, // AlreadyClaimed
       sendIxs(context, [claimant], sigIx, sigClaimIx),
+    );
+  });
+
+  it("refuses claiming via Merkle proof if already claimed via signature", async () => {
+    const { context, program, mint, vault, entries, tree, claimants, signer } =
+      env;
+
+    const claimant = claimants[2];
+    const amount = entries[2].amount;
+    const proof = tree.getProof(2).map((node) => [...node]);
+    const claimantAta = getAssociatedTokenAddressSync(mint, claimant.publicKey);
+
+    await sendIxs(
+      context,
+      [claimant],
+      createAssociatedTokenAccountInstruction(
+        claimant.publicKey,
+        claimantAta,
+        claimant.publicKey,
+        mint,
+      ),
+    );
+
+    // 1. Claim via signature
+    const sigIx = buildClaimSignatureIx(
+      signer,
+      claimant.publicKey,
+      amount,
+      program.programId,
+    );
+    const sigClaimIx = await program.methods
+      .claimWithSignature(amount)
+      .accountsPartial({
+        claim: claimPda(claimant.publicKey),
+        claimant: claimant.publicKey,
+        claimantAta,
+        mint,
+        vault,
+        tokenProgram: TOKEN_PROGRAM_ID,
+        instructions: SYSVAR_INSTRUCTIONS_PUBKEY,
+      })
+      .instruction();
+    await sendIxs(context, [claimant], sigIx, sigClaimIx);
+
+    // 2. Attempt to claim via Merkle proof (blocked by anti-double-claim guard)
+    const merkleIx = await program.methods
+      .claim(amount, proof)
+      .accountsPartial({
+        claim: claimPda(claimant.publicKey),
+        claimant: claimant.publicKey,
+        claimantAta,
+        mint,
+        vault,
+        tokenProgram: TOKEN_PROGRAM_ID,
+      })
+      .instruction();
+
+    await expectReverted(
+      { revertedWith: { message: "0x1771" } }, // AlreadyClaimed
+      sendIxs(context, [claimant], merkleIx),
+    );
+  });
+
+  it("refuses claiming twice via signature", async () => {
+    const { context, program, mint, vault, signer, payer } = env;
+
+    const claimant = Keypair.generate();
+    const amount = oneToken().muln(2);
+    const claimantAta = getAssociatedTokenAddressSync(mint, claimant.publicKey);
+
+    await sendIxs(
+      context,
+      [payer],
+      SystemProgram.transfer({
+        fromPubkey: payer.publicKey,
+        toPubkey: claimant.publicKey,
+        lamports: 10 * 1_000_000_000,
+      }),
+      createAssociatedTokenAccountInstruction(
+        payer.publicKey,
+        claimantAta,
+        claimant.publicKey,
+        mint,
+      ),
+    );
+
+    const sigIx = buildClaimSignatureIx(
+      signer,
+      claimant.publicKey,
+      amount,
+      program.programId,
+    );
+
+    const claimIx = await program.methods
+      .claimWithSignature(amount)
+      .accountsPartial({
+        claim: claimPda(claimant.publicKey),
+        claimant: claimant.publicKey,
+        claimantAta,
+        mint,
+        vault,
+        tokenProgram: TOKEN_PROGRAM_ID,
+        instructions: SYSVAR_INSTRUCTIONS_PUBKEY,
+      })
+      .instruction();
+
+    // First signature claim succeeds
+    await sendIxs(context, [claimant], sigIx, claimIx);
+
+    // Second signature claim fails (AlreadyClaimed)
+    const sigIx2 = buildClaimSignatureIx(
+      signer,
+      claimant.publicKey,
+      amount,
+      program.programId,
+    );
+    await expectReverted(
+      { revertedWith: { message: "0x1771" } }, // AlreadyClaimed
+      sendIxs(context, [claimant], sigIx2, claimIx),
     );
   });
 

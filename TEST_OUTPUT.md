@@ -1,5 +1,26 @@
 # Test Suite Execution Outputs
 
+### 04 — Merkle Airdrop (`npm run test:merkleAirdrop`)
+
+```text
+> solana-template@1.0.0 test:merkleAirdrop
+> anchor build -p merkle_airdrop && ts-mocha -p ./tsconfig.json -t 1000000 tests/04-merkle-airdrop/*.test.ts
+
+  04-merkle-airdrop
+    ✔ claims an allocation with a valid Merkle proof
+    ✔ refuses claim with an invalid Merkle proof
+    ✔ refuses claiming twice via Merkle proof (anti-double-claim guard)
+    ✔ claims an allocation with a valid signature
+    ✔ refuses claiming via signature if already claimed via Merkle proof
+    ✔ refuses claiming via Merkle proof if already claimed via signature
+    ✔ refuses claiming twice via signature
+    ✔ refuses claim with a signature signed by an unauthorized key
+    ✔ there is a test that signature for one user cannot be used by another (cross-user signature replay)
+    ✔ refuses claim with zero amount
+
+  10 passing (335ms)
+```
+
 ### 05 — Raffle (`npm run test:raffle`)
 
 ```text
@@ -15,25 +36,6 @@
     ✔ refuses deposit with zero amount
 
   6 passing (296ms)
-```
-
-### 04 — Merkle Airdrop (`npm run test:merkleAirdrop`)
-
-```text
-> solana-template@1.0.0 test:merkleAirdrop
-> anchor build -p merkle_airdrop && ts-mocha -p ./tsconfig.json -t 1000000 tests/04-merkle-airdrop/*.test.ts
-
-  04-merkle-airdrop
-    ✔ claims an allocation with a valid Merkle proof
-    ✔ refuses claim with an invalid Merkle proof
-    ✔ refuses claiming twice via Merkle proof
-    ✔ claims an allocation with a valid signature
-    ✔ refuses claiming via signature if already claimed via Merkle proof
-    ✔ refuses claim with a signature signed by an unauthorized key
-    ✔ there is a test that signature for one user cannot be used by another (cross-user signature replay)
-    ✔ refuses claim with zero amount
-
-  8 passing (358ms)
 ```
 
 ### 02 — Staking (`npm run test:staking`)
