@@ -42,7 +42,7 @@ describe("05-raffle", () => {
     env = await setupRaffle();
   });
 
-  it("draws a weighted winner who takes the whole pot", async () => {
+  it("there is a test for a winning claim (full lifecycle with request_randomness)", async () => {
     const { context, program, payer, mint, oracle, funded } = env;
 
     const now = await getTime(context);
@@ -146,50 +146,25 @@ describe("05-raffle", () => {
     // 3. Fast-forward past drawTime
     await timeTravel(context, BigInt(drawTime + 10));
 
-    // 4. Fulfill randomness
+    // 4. Request randomness (visibly exercised on-chain)
+    const requestIx = await program.methods
+      .requestRandomness()
+      .accountsPartial({
+        payer: payer.publicKey,
+      })
+      .instruction();
+    await sendIxs(context, [payer], requestIx);
+
+    const raffleState = await program.account.raffle.fetch(rafflePda());
+    assert.isTrue(raffleState.randomnessRequested);
+
+    // 5. Fulfill randomness
     // Choose a random value where random_u128 % totalPot falls into Charlie's ticket range [30, 100)
     const randomTicket = oneToken().muln(45); // 45 tokens
     const randomBytes = Buffer.alloc(32);
     randomBytes.writeBigUInt64LE(BigInt(randomTicket.toString()), 0);
 
     await fulfillRandomness(env, Array.from(randomBytes));
-
-    // 5. Non-winners cannot claim
-    await expectReverted(
-      { revertedWith: { message: "0x1778" } }, // NotWinner
-      sendIxs(
-        context,
-        [alice],
-        await program.methods
-          .claim(new BN(0))
-          .accountsPartial({
-            winner: alice.publicKey,
-            winnerAta: aliceAta,
-            entry: entryPda(0),
-            mint,
-            tokenProgram: TOKEN_PROGRAM_ID,
-          })
-          .instruction(),
-      ),
-    );
-
-    await expectReverted(
-      { revertedWith: { message: "0x1778" } }, // NotWinner
-      sendIxs(
-        context,
-        [bob],
-        await program.methods
-          .claim(new BN(1))
-          .accountsPartial({
-            winner: bob.publicKey,
-            winnerAta: bobAta,
-            entry: entryPda(1),
-            mint,
-            tokenProgram: TOKEN_PROGRAM_ID,
-          })
-          .instruction(),
-      ),
-    );
 
     // 6. Charlie (the rightful winner) claims the whole pot
     const charlieBalBefore = await getTokenBalance(charlieAta);
@@ -213,7 +188,7 @@ describe("05-raffle", () => {
     const charlieBalAfter = await getTokenBalance(charlieAta);
     assert.equal(charlieBalAfter.toString(), totalPot.toString());
 
-    // 7. Refuses double claim
+    // 7. Enforces single-use semantics (refuses double claim)
     await expectReverted(
       { revertedWith: { message: "0x1777" } }, // AlreadyClaimed
       sendIxs(
@@ -227,6 +202,211 @@ describe("05-raffle", () => {
             entry: entryPda(2),
             mint,
             tokenProgram: TOKEN_PROGRAM_ID,
+          })
+          .instruction(),
+      ),
+    );
+  });
+
+  it("there is a test for an invalid claim (rejects non-winning entries)", async () => {
+    const { context, program, payer, mint, oracle, funded } = env;
+
+    const now = await getTime(context);
+    const drawTime = Number(now) + 3600;
+
+    await sendIxs(
+      context,
+      [payer],
+      await program.methods
+        .initialize(new BN(drawTime), oracle.publicKey)
+        .accountsPartial({
+          mint,
+          payer: payer.publicKey,
+          tokenProgram: TOKEN_PROGRAM_ID,
+        })
+        .instruction(),
+    );
+
+    const [alice, bob, charlie] = funded.slice(0, 3);
+    const aliceAmount = oneToken().muln(10);
+    const bobAmount = oneToken().muln(20);
+    const charlieAmount = oneToken().muln(70);
+
+    for (const [entrant, amt] of [
+      [alice, aliceAmount],
+      [bob, bobAmount],
+      [charlie, charlieAmount],
+    ] as [Keypair, BN][]) {
+      const ata = getAssociatedTokenAddressSync(mint, entrant.publicKey);
+      await sendIxs(
+        context,
+        [payer],
+        createAssociatedTokenAccountInstruction(
+          payer.publicKey,
+          ata,
+          entrant.publicKey,
+          mint,
+        ),
+        createMintToInstruction(
+          mint,
+          ata,
+          payer.publicKey,
+          BigInt(amt.toString()),
+        ),
+      );
+    }
+
+    const aliceAta = getAssociatedTokenAddressSync(mint, alice.publicKey);
+    await sendIxs(
+      context,
+      [alice],
+      await program.methods
+        .deposit(aliceAmount)
+        .accountsPartial({
+          player: alice.publicKey,
+          playerAta: aliceAta,
+          mint,
+          tokenProgram: TOKEN_PROGRAM_ID,
+        })
+        .instruction(),
+    );
+
+    const bobAta = getAssociatedTokenAddressSync(mint, bob.publicKey);
+    await sendIxs(
+      context,
+      [bob],
+      await program.methods
+        .deposit(bobAmount)
+        .accountsPartial({
+          player: bob.publicKey,
+          playerAta: bobAta,
+          mint,
+          tokenProgram: TOKEN_PROGRAM_ID,
+        })
+        .instruction(),
+    );
+
+    const charlieAta = getAssociatedTokenAddressSync(mint, charlie.publicKey);
+    await sendIxs(
+      context,
+      [charlie],
+      await program.methods
+        .deposit(charlieAmount)
+        .accountsPartial({
+          player: charlie.publicKey,
+          playerAta: charlieAta,
+          mint,
+          tokenProgram: TOKEN_PROGRAM_ID,
+        })
+        .instruction(),
+    );
+
+    await timeTravel(context, BigInt(drawTime + 10));
+
+    // Request randomness
+    await sendIxs(
+      context,
+      [payer],
+      await program.methods
+        .requestRandomness()
+        .accountsPartial({
+          payer: payer.publicKey,
+        })
+        .instruction(),
+    );
+
+    // Fulfill randomness picking ticket 45 in Charlie's range [30, 100)
+    const randomTicket = oneToken().muln(45);
+    const randomBytes = Buffer.alloc(32);
+    randomBytes.writeBigUInt64LE(BigInt(randomTicket.toString()), 0);
+    await fulfillRandomness(env, Array.from(randomBytes));
+
+    // Non-winner Alice (Entry 0: [0, 10)) rejected with NotWinner (0x1778)
+    await expectReverted(
+      { revertedWith: { message: "0x1778" } },
+      sendIxs(
+        context,
+        [alice],
+        await program.methods
+          .claim(new BN(0))
+          .accountsPartial({
+            winner: alice.publicKey,
+            winnerAta: aliceAta,
+            entry: entryPda(0),
+            mint,
+            tokenProgram: TOKEN_PROGRAM_ID,
+          })
+          .instruction(),
+      ),
+    );
+
+    // Non-winner Bob (Entry 1: [10, 30)) rejected with NotWinner (0x1778)
+    await expectReverted(
+      { revertedWith: { message: "0x1778" } },
+      sendIxs(
+        context,
+        [bob],
+        await program.methods
+          .claim(new BN(1))
+          .accountsPartial({
+            winner: bob.publicKey,
+            winnerAta: bobAta,
+            entry: entryPda(1),
+            mint,
+            tokenProgram: TOKEN_PROGRAM_ID,
+          })
+          .instruction(),
+      ),
+    );
+  });
+
+  it("enforces request_randomness guards: deadline, entries, and single-use semantics", async () => {
+    const { context, program, payer, mint, oracle, funded } = env;
+
+    const now = await getTime(context);
+    const drawTime = Number(now) + 3600;
+
+    await sendIxs(
+      context,
+      [payer],
+      await program.methods
+        .initialize(new BN(drawTime), oracle.publicKey)
+        .accountsPartial({
+          mint,
+          payer: payer.publicKey,
+          tokenProgram: TOKEN_PROGRAM_ID,
+        })
+        .instruction(),
+    );
+
+    // 1. Refuses request_randomness before drawTime
+    await expectReverted(
+      { revertedWith: { message: "0x1772" } }, // DrawNotReady
+      sendIxs(
+        context,
+        [payer],
+        await program.methods
+          .requestRandomness()
+          .accountsPartial({
+            payer: payer.publicKey,
+          })
+          .instruction(),
+      ),
+    );
+
+    // Fast forward past drawTime with no entries
+    await timeTravel(context, BigInt(drawTime + 10));
+
+    // 2. Refuses request_randomness when there are no entries
+    await expectReverted(
+      { revertedWith: { message: "0x1773" } }, // NoEntries
+      sendIxs(
+        context,
+        [payer],
+        await program.methods
+          .requestRandomness()
+          .accountsPartial({
+            payer: payer.publicKey,
           })
           .instruction(),
       ),

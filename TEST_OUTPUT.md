@@ -1,5 +1,22 @@
 # Test Suite Execution Outputs
 
+### 05 — Raffle (`npm run test:raffle`)
+
+```text
+> solana-template@1.0.0 test:raffle
+> anchor build -p raffle && ts-mocha -p ./tsconfig.json -t 1000000 tests/05-raffle/*.test.ts
+
+  05-raffle
+    ✔ there is a test for a winning claim (full lifecycle with request_randomness) (38ms)
+    ✔ there is a test for an invalid claim (rejects non-winning entries)
+    ✔ enforces request_randomness guards: deadline, entries, and single-use semantics
+    ✔ refuses claim before randomness is fulfilled
+    ✔ refuses deposit after draw deadline
+    ✔ refuses deposit with zero amount
+
+  6 passing (296ms)
+```
+
 ### 04 — Merkle Airdrop (`npm run test:merkleAirdrop`)
 
 ```text
@@ -16,22 +33,7 @@
     ✔ there is a test that signature for one user cannot be used by another (cross-user signature replay)
     ✔ refuses claim with zero amount
 
-  8 passing (477ms)
-```
-
-### 05 — Raffle (`npm run test:raffle`)
-
-```text
-> solana-template@1.0.0 test:raffle
-> anchor build -p raffle && ts-mocha -p ./tsconfig.json -t 1000000 tests/05-raffle/*.test.ts
-
-  raffle
-    ✔ allows users to deposit and lets winner claim the pot (182ms)
-    ✔ refuses claim before randomness is fulfilled
-    ✔ refuses deposit after draw time
-    ✔ refuses deposit with zero amount
-
-  4 passing (182ms)
+  8 passing (358ms)
 ```
 
 ### 02 — Staking (`npm run test:staking`)
