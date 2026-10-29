@@ -94,6 +94,7 @@ describe("01-donor-vault", () => {
     );
     assert.equal(rec.total.toNumber(), 1);
     assert.equal(rec.donationCount.toNumber(), 1);
+    assert.equal(rec.donor.toBase58(), payer.publicKey.toBase58());
 
     const donation = await program.account.donation.fetch(
       donationPda(payer.publicKey, 0),

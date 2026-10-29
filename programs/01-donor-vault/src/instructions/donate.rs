@@ -46,8 +46,9 @@ pub fn donate(ctx: Context<Donate>, amount: u64, message: String) -> Result<()> 
     let donor_record = &mut ctx.accounts.donor_record;
     let donation = &mut ctx.accounts.donation;
 
-    // First donation by this donor increments unique_donor_count
+    // First donation by this donor increments unique_donor_count and sets donor
     if donor_record.donation_count == 0 {
+        donor_record.donor = ctx.accounts.donor.key();
         vault.unique_donor_count = vault
             .unique_donor_count
             .checked_add(1)
