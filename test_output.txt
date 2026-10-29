@@ -1,0 +1,21 @@
+> solana-template@1.0.0 test:merkleAirdrop
+> anchor build -p merkle_airdrop && ts-mocha -p ./tsconfig.json -t 1000000 tests/04-merkle-airdrop/*.test.ts
+
+
+  04-merkle-airdrop
+    ✔ claims an allocation with a valid Merkle proof
+    ✔ refuses claim with an invalid Merkle proof
+    ✔ refuses claiming twice via Merkle proof (anti-double-claim guard)
+    ✔ claims an allocation with a valid signature
+    ✔ refuses claiming via signature if already claimed via Merkle proof
+    ✔ refuses claiming via Merkle proof if already claimed via signature
+    ✔ refuses claiming twice via signature
+    ✔ refuses claim with a signature signed by an unauthorized key
+      [PASS] Confirmed: Signature for Alice cannot be used by Bob (cross-user replay rejected with 0x1774 InvalidSignatureMessage)
+    ✔ there is a test that signature for one user cannot be used by another
+    ✔ refuses claim when signature for one user is used by another (cross-user signature replay)
+    ✔ refuses claim with a signature intended for another claimant
+    ✔ refuses claim with zero amount
+
+
+  12 passing (481ms)

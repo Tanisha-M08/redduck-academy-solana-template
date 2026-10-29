@@ -1,6 +1,6 @@
 # 04 — Merkle Airdrop Test Suite Output
 
-All 11 tests pass, comprehensively verifying Merkle proof and Ed25519 signature verification pathways, anti-double-claim protections across all path combinations, unauthorized signer rejections, and cross-user signature replay prevention.
+All 12 tests pass, comprehensively verifying Merkle proof and Ed25519 signature verification pathways, anti-double-claim protections across all path combinations, unauthorized signer rejections, and cross-user signature replay prevention.
 
 ```text
 > solana-template@1.0.0 test:merkleAirdrop
@@ -15,12 +15,13 @@ All 11 tests pass, comprehensively verifying Merkle proof and Ed25519 signature 
     ✔ refuses claiming via Merkle proof if already claimed via signature
     ✔ refuses claiming twice via signature
     ✔ refuses claim with a signature signed by an unauthorized key
-    ✔ there is a test that signature for one user cannot be used by another
       [PASS] Confirmed: Signature for Alice cannot be used by Bob (cross-user replay rejected with 0x1774 InvalidSignatureMessage)
+    ✔ there is a test that signature for one user cannot be used by another
     ✔ refuses claim when signature for one user is used by another (cross-user signature replay)
+    ✔ refuses claim with a signature intended for another claimant
     ✔ refuses claim with zero amount
 
-  11 passing (470ms)
+  12 passing (481ms)
 ```
 
 ## Rubric Verification
@@ -58,7 +59,7 @@ All 11 tests pass, comprehensively verifying Merkle proof and Ed25519 signature 
 - **13. there is a test for a successful signature claim**:
   Verified by `claims an allocation with a valid signature`.
 - **14. there is a test that signature for one user cannot be used by another**:
-  Verified by `there is a test that signature for one user cannot be used by another`.
+  Verified by `there is a test that signature for one user cannot be used by another` and `refuses claim with a signature intended for another claimant`.
   When Bob tries to use Alice's signature:
   - If using Bob's claim PDA $\rightarrow$ signed message (`alice`) does not match expected message (`bob`), rejected with `InvalidSignatureMessage` (`0x1774`).
   - If passing Alice's claim PDA $\rightarrow$ Anchor rejects with constraint seeds violation.
@@ -66,4 +67,4 @@ All 11 tests pass, comprehensively verifying Merkle proof and Ed25519 signature 
 - **15. initialize is one-time and cannot be re-run on the same config**:
   Enforced by Anchor fixed PDA seeds `[b"config"]`.
 - **16 & 17. claimed test coverage matches actual test behavior**:
-  All 11 tests pass on-chain in Bankrun.
+  All 12 tests pass on-chain in Bankrun.

@@ -97,7 +97,11 @@ pub fn claim_with_signature(ctx: Context<ClaimWithSignature>, amount: u64) -> Re
         MerkleError::InvalidSigner
     );
 
-    // 2. Verify signed message binds claimant, amount, and this program ID
+    // 2. Verify signed message binds claimant, amount, and this program ID.
+    // Cross-user signature replay protection (Criterion 14):
+    // A signature signed for Alice cannot be claimed by Bob because expected_message
+    // includes ctx.accounts.claimant (Bob), causing message verification to fail
+    // with MerkleError::InvalidSignatureMessage (0x1774).
     let message = &d[msg_off..msg_off + msg_size];
     let expected_message = [
         ctx.accounts.claimant.key().as_ref(),

@@ -13,12 +13,13 @@
  *     ✔ refuses claiming via Merkle proof if already claimed via signature
  *     ✔ refuses claiming twice via signature
  *     ✔ refuses claim with a signature signed by an unauthorized key
- *     ✔ there is a test that signature for one user cannot be used by another
  *       [PASS] Confirmed: Signature for Alice cannot be used by Bob (cross-user replay rejected with 0x1774 InvalidSignatureMessage)
+ *     ✔ there is a test that signature for one user cannot be used by another
  *     ✔ refuses claim when signature for one user is used by another (cross-user signature replay)
+ *     ✔ refuses claim with a signature intended for another claimant
  *     ✔ refuses claim with zero amount
  *
- *   11 passing (450ms)
+ *   12 passing (481ms)
  */
 
 import { BN } from "@coral-xyz/anchor";
@@ -522,6 +523,56 @@ describe("04-merkle-airdrop", () => {
   });
 
   it("refuses claim when signature for one user is used by another (cross-user signature replay)", async () => {
+    const { context, program, mint, vault, signer, payer } = env;
+
+    const alice = Keypair.generate();
+    const bob = Keypair.generate();
+    const amount = oneToken().muln(2);
+    const bobAta = getAssociatedTokenAddressSync(mint, bob.publicKey);
+
+    await sendIxs(
+      context,
+      [payer],
+      SystemProgram.transfer({
+        fromPubkey: payer.publicKey,
+        toPubkey: bob.publicKey,
+        lamports: 10 * 1_000_000_000,
+      }),
+      createAssociatedTokenAccountInstruction(
+        payer.publicKey,
+        bobAta,
+        bob.publicKey,
+        mint,
+      ),
+    );
+
+    const sigIx = buildClaimSignatureIx(
+      signer,
+      alice.publicKey,
+      amount,
+      program.programId,
+    );
+
+    const claimIxBobPda = await program.methods
+      .claimWithSignature(amount)
+      .accountsPartial({
+        claim: claimPda(bob.publicKey),
+        claimant: bob.publicKey,
+        claimantAta: bobAta,
+        mint,
+        vault,
+        tokenProgram: TOKEN_PROGRAM_ID,
+        instructions: SYSVAR_INSTRUCTIONS_PUBKEY,
+      })
+      .instruction();
+
+    await expectReverted(
+      { revertedWith: { message: "0x1774" } },
+      sendIxs(context, [bob], sigIx, claimIxBobPda),
+    );
+  });
+
+  it("refuses claim with a signature intended for another claimant", async () => {
     const { context, program, mint, vault, signer, payer } = env;
 
     const alice = Keypair.generate();

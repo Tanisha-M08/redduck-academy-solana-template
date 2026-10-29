@@ -23,7 +23,7 @@
 
 ---
 
-## Test Execution Evidence (11/11 Passing)
+## Test Execution Evidence (12/12 Passing)
 
 ```text
 > solana-template@1.0.0 test:merkleAirdrop
@@ -38,10 +38,11 @@
     ✔ refuses claiming via Merkle proof if already claimed via signature
     ✔ refuses claiming twice via signature
     ✔ refuses claim with a signature signed by an unauthorized key
-    ✔ there is a test that signature for one user cannot be used by another
       [PASS] Confirmed: Signature for Alice cannot be used by Bob (cross-user replay rejected with 0x1774 InvalidSignatureMessage)
+    ✔ there is a test that signature for one user cannot be used by another
     ✔ refuses claim when signature for one user is used by another (cross-user signature replay)
+    ✔ refuses claim with a signature intended for another claimant
     ✔ refuses claim with zero amount
 
-  11 passing (470ms)
+  12 passing (481ms)
 ```
