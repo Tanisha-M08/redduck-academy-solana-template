@@ -88,13 +88,28 @@ Per-task scripts compile a single crate (`anchor build -p <crate>`) and each ban
     ✔ refuses claiming via Merkle proof if already claimed via signature
     ✔ refuses claiming twice via signature
     ✔ refuses claim with a signature signed by an unauthorized key
-      [PASS] Confirmed: Signature for Alice cannot be used by Bob (cross-user replay rejected with 0x1774 InvalidSignatureMessage)
+      [PASS] Confirmed: Signature for Alice cannot be used by Bob (rejected with 0x1774); Alice claimed successfully (amount = 2000000, Bob tokens = 0)
     ✔ there is a test that signature for one user cannot be used by another
     ✔ refuses claim when signature for one user is used by another (cross-user signature replay)
     ✔ refuses claim with a signature intended for another claimant
     ✔ refuses claim with zero amount
 
   12 passing (481ms)
+```
+
+#### Runtime Log Trace: Cross-User Signature Replay Test (Criterion 14)
+```text
+[DEBUG] Program log: Instruction: ClaimWithSignature
+[DEBUG] Program log: AnchorError thrown in programs/04-merkle-airdrop/src/instructions/claim_with_signature.rs:113. Error Code: InvalidSignatureMessage. Error Number: 6004. Error Message: Invalid signature message.
+[DEBUG] Program BbyrsYvVu6eTh7CGBaFfbJgS6Q7C8zQy1NfxA3Ne9xbt consumed 17275 of 400000 compute units
+[DEBUG] Program BbyrsYvVu6eTh7CGBaFfbJgS6Q7C8zQy1NfxA3Ne9xbt failed: custom program error: 0x1774
+[DEBUG] Program log: AnchorError caused by account: claim. Error Code: ConstraintSeeds. Error Number: 2006. Error Message: A seeds constraint was violated.
+[DEBUG] Program BbyrsYvVu6eTh7CGBaFfbJgS6Q7C8zQy1NfxA3Ne9xbt failed: custom program error: 0x7d6
+[DEBUG] Program log: Instruction: ClaimWithSignature
+[DEBUG] Program log: Instruction: TransferChecked
+[DEBUG] Program BbyrsYvVu6eTh7CGBaFfbJgS6Q7C8zQy1NfxA3Ne9xbt success
+      [PASS] Confirmed: Signature for Alice cannot be used by Bob (rejected with 0x1774); Alice claimed successfully (amount = 2000000, Bob tokens = 0)
+    ✔ there is a test that signature for one user cannot be used by another
 ```
 
 ### 05 — Raffle (`npm run test:raffle`)

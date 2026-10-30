@@ -517,8 +517,56 @@ describe("04-merkle-airdrop", () => {
       sendIxs(context, [bob], sigIx, claimIxAlicePda),
     );
 
+    // Verify Bob received 0 tokens and no claim account was created for Bob
+    const bobBalance = await getTokenBalance(bobAta);
+    assert.equal(bobBalance.toString(), "0");
+    const bobClaim = await context.banksClient.getAccount(claimPda(bob.publicKey));
+    assert.isNull(bobClaim);
+
+    // Create ATA and fund Alice with SOL
+    const aliceAta = getAssociatedTokenAddressSync(mint, alice.publicKey);
+    await sendIxs(
+      context,
+      [payer],
+      SystemProgram.transfer({
+        fromPubkey: payer.publicKey,
+        toPubkey: alice.publicKey,
+        lamports: 10 * 1_000_000_000,
+      }),
+      createAssociatedTokenAccountInstruction(
+        payer.publicKey,
+        aliceAta,
+        alice.publicKey,
+        mint,
+      ),
+    );
+
+    // Intended recipient Alice claims successfully with the exact same signature
+    const claimIxAlice = await program.methods
+      .claimWithSignature(amount)
+      .accountsPartial({
+        claim: claimPda(alice.publicKey),
+        claimant: alice.publicKey,
+        claimantAta: aliceAta,
+        mint,
+        vault,
+        tokenProgram: TOKEN_PROGRAM_ID,
+        instructions: SYSVAR_INSTRUCTIONS_PUBKEY,
+      })
+      .instruction();
+
+    await sendIxs(context, [alice], sigIx, claimIxAlice);
+
+    // Confirm output: Alice received the tokens, Bob still has 0
+    const aliceFinalBalance = await getTokenBalance(aliceAta);
+    assert.equal(aliceFinalBalance.toString(), amount.toString());
+    const bobFinalBalance = await getTokenBalance(bobAta);
+    assert.equal(bobFinalBalance.toString(), "0");
+
     console.log(
-      "      [PASS] Confirmed: Signature for Alice cannot be used by Bob (cross-user replay rejected with 0x1774 InvalidSignatureMessage)",
+      "      [PASS] Confirmed: Signature for Alice cannot be used by Bob (rejected with 0x1774); Alice claimed successfully (amount = " +
+        amount.toString() +
+        ", Bob tokens = 0)",
     );
   });
 
