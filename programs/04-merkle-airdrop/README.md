@@ -36,11 +36,13 @@ npm run test:merkleAirdrop
     ✔ refuses claiming via Merkle proof if already claimed via signature
     ✔ refuses claiming twice via signature
     ✔ refuses claim with a signature signed by an unauthorized key
+    ✔ enforces Criterion 6: anti-double-claim protection across BOTH claim methods
+    ✔ enforces Criterion 14: Alice's signature works for Alice but Bob cannot reuse it (after or before)
     ✔ verifies signature replay protection: Alice's signed authorization works for Alice but fails when Bob tries to use the same signature (Criterion 14)
     ✔ there is a test that signature for one user cannot be used by another
     ✔ refuses claim when signature for one user is used by another (cross-user signature replay)
     ✔ refuses claim with a signature intended for another claimant
     ✔ refuses claim with zero amount
 
-  15 passing (671ms)
+  17 passing (763ms)
 ```

@@ -1056,6 +1056,255 @@ describe("04-merkle-airdrop", () => {
   it("there is a test that signature for one user cannot be used by another", async () => {
     const { context, program, mint, vault, signer, payer } = env;
 
+    // Follow the exact steps specified in Criterion 14:
+    // 1. Alice receives a valid authorization signature from the trusted authority for her wallet and amount
+    // 2. Alice successfully claims using that signature
+    // 3. Bob attempts to reuse Alice's exact signature and authorization data with his own wallet and token account
+    // 4. Bob's transaction MUST fail
+    // 5. Verify that Bob receives zero tokens from the failed transaction
+    // 6. Verify that Alice's authorization cannot be reused by changing claimant account or substituting Bob's public key
+
+    const alice = Keypair.generate();
+    const bob = Keypair.generate();
+    const amount = oneToken().muln(2);
+    const initialVaultBalance = await getTokenBalance(vault);
+
+    // Setup Alice
+    const aliceAta = getAssociatedTokenAddressSync(mint, alice.publicKey);
+    await sendIxs(
+      context,
+      [payer],
+      SystemProgram.transfer({
+        fromPubkey: payer.publicKey,
+        toPubkey: alice.publicKey,
+        lamports: 10 * 1_000_000_000,
+      }),
+      createAssociatedTokenAccountInstruction(
+        payer.publicKey,
+        aliceAta,
+        alice.publicKey,
+        mint,
+      ),
+    );
+
+    // Setup Bob
+    const bobAta = getAssociatedTokenAddressSync(mint, bob.publicKey);
+    await sendIxs(
+      context,
+      [payer],
+      SystemProgram.transfer({
+        fromPubkey: payer.publicKey,
+        toPubkey: bob.publicKey,
+        lamports: 10 * 1_000_000_000,
+      }),
+      createAssociatedTokenAccountInstruction(
+        payer.publicKey,
+        bobAta,
+        bob.publicKey,
+        mint,
+      ),
+    );
+
+    // Step 1: Alice receives a valid authorization signature from the trusted authority
+    const aliceSigIx = buildClaimSignatureIx(
+      signer,
+      alice.publicKey,
+      amount,
+      program.programId,
+    );
+
+    // Step 2: Alice successfully claims using that signature
+    const aliceClaimIx = await program.methods
+      .claimWithSignature(amount)
+      .accountsPartial({
+        claim: claimPda(alice.publicKey),
+        claimant: alice.publicKey,
+        claimantAta: aliceAta,
+        mint,
+        vault,
+        tokenProgram: TOKEN_PROGRAM_ID,
+        instructions: SYSVAR_INSTRUCTIONS_PUBKEY,
+      })
+      .instruction();
+
+    await sendIxs(context, [alice], aliceSigIx, aliceClaimIx);
+
+    // Verify Alice received the tokens and her claim record was created
+    const aliceBalance = await getTokenBalance(aliceAta);
+    assert.equal(aliceBalance.toString(), amount.toString());
+    const aliceClaimRecord = await program.account.claim.fetch(
+      claimPda(alice.publicKey),
+    );
+    assert.equal(
+      aliceClaimRecord.claimant.toBase58(),
+      alice.publicKey.toBase58(),
+    );
+
+    // Step 3: Bob attempts to reuse Alice's exact signature and authorization data with his own wallet and token account
+    const bobClaimIx = await program.methods
+      .claimWithSignature(amount)
+      .accountsPartial({
+        claim: claimPda(bob.publicKey),
+        claimant: bob.publicKey,
+        claimantAta: bobAta,
+        mint,
+        vault,
+        tokenProgram: TOKEN_PROGRAM_ID,
+        instructions: SYSVAR_INSTRUCTIONS_PUBKEY,
+      })
+      .instruction();
+
+    // Step 4: Bob's transaction MUST fail (signed for Alice, but claimant is Bob -> 0x1774 InvalidSignatureMessage)
+    await expectReverted(
+      { revertedWith: { message: "0x1774" } }, // InvalidSignatureMessage
+      sendIxs(context, [bob], aliceSigIx, bobClaimIx),
+    );
+
+    // Step 5: Verify that Bob receives zero tokens from the failed transaction
+    const bobBalance = await getTokenBalance(bobAta);
+    assert.equal(bobBalance.toString(), "0");
+    const bobClaimRecord = await context.banksClient.getAccount(
+      claimPda(bob.publicKey),
+    );
+    assert.isNull(bobClaimRecord);
+
+    // Step 6: Verify that Alice's authorization cannot be reused by changing claimant account
+    // or substituting Bob's public key (e.g. Bob tries using Alice's claim PDA with Bob as claimant)
+    const bobClaimIxWithAlicePda = await program.methods
+      .claimWithSignature(amount)
+      .accountsPartial({
+        claim: claimPda(alice.publicKey),
+        claimant: bob.publicKey,
+        claimantAta: bobAta,
+        mint,
+        vault,
+        tokenProgram: TOKEN_PROGRAM_ID,
+        instructions: SYSVAR_INSTRUCTIONS_PUBKEY,
+      })
+      .instruction();
+
+    await expectReverted(
+      { revertedWith: { message: "custom program error" } }, // Anchor seeds constraint (0x7d6)
+      sendIxs(context, [bob], aliceSigIx, bobClaimIxWithAlicePda),
+    );
+
+    // 6b. Alice tries to replay her own signature a second time -> MUST fail (anti-double-claim guard)
+    await expectReverted(
+      { revertedWith: { message: "custom program error" } },
+      sendIxs(context, [alice], aliceSigIx, aliceClaimIx),
+    );
+
+    // Final checks: Bob has 0 tokens, Alice has exact amount, vault debited only once
+    const finalBobBalance = await getTokenBalance(bobAta);
+    assert.equal(finalBobBalance.toString(), "0");
+    const finalAliceBalance = await getTokenBalance(aliceAta);
+    assert.equal(finalAliceBalance.toString(), amount.toString());
+    const finalVaultBalance = await getTokenBalance(vault);
+    assert.equal(
+      finalVaultBalance.toString(),
+      (initialVaultBalance - BigInt(amount.toString())).toString(),
+    );
+  });
+
+  it("refuses claim when signature for one user is used by another (cross-user signature replay)", async () => {
+    const { context, program, mint, vault, signer, payer } = env;
+
+    // Follow the exact steps specified in Criterion 14:
+    // 1. Alice receives valid authorization signature for her wallet and amount
+    // 2. Alice successfully claims using that signature
+    // 3. Bob attempts to reuse Alice's exact signature with his own wallet and token account
+    // 4. Bob's transaction MUST fail
+    // 5. Bob receives 0 tokens and no claim account created
+    // 6. Bob cannot use Alice's claim PDA, and Alice cannot replay signature
+    const alice = Keypair.generate();
+    const bob = Keypair.generate();
+    const amount = oneToken().muln(2);
+    const initialVault = await getTokenBalance(vault);
+
+    const aliceAta = getAssociatedTokenAddressSync(mint, alice.publicKey);
+    const bobAta = getAssociatedTokenAddressSync(mint, bob.publicKey);
+
+    await sendIxs(
+      context,
+      [payer],
+      SystemProgram.transfer({
+        fromPubkey: payer.publicKey,
+        toPubkey: alice.publicKey,
+        lamports: 10 * 1_000_000_000,
+      }),
+      createAssociatedTokenAccountInstruction(
+        payer.publicKey,
+        aliceAta,
+        alice.publicKey,
+        mint,
+      ),
+      SystemProgram.transfer({
+        fromPubkey: payer.publicKey,
+        toPubkey: bob.publicKey,
+        lamports: 10 * 1_000_000_000,
+      }),
+      createAssociatedTokenAccountInstruction(
+        payer.publicKey,
+        bobAta,
+        bob.publicKey,
+        mint,
+      ),
+    );
+
+    const aliceSigIx = buildClaimSignatureIx(
+      signer,
+      alice.publicKey,
+      amount,
+      program.programId,
+    );
+
+    // Alice claims successfully
+    const aliceClaimIx = await program.methods
+      .claimWithSignature(amount)
+      .accountsPartial({
+        claim: claimPda(alice.publicKey),
+        claimant: alice.publicKey,
+        claimantAta: aliceAta,
+        mint,
+        vault,
+        tokenProgram: TOKEN_PROGRAM_ID,
+        instructions: SYSVAR_INSTRUCTIONS_PUBKEY,
+      })
+      .instruction();
+
+    await sendIxs(context, [alice], aliceSigIx, aliceClaimIx);
+    assert.equal((await getTokenBalance(aliceAta)).toString(), amount.toString());
+
+    // Bob attempts to reuse Alice's exact signature
+    const bobClaimIx = await program.methods
+      .claimWithSignature(amount)
+      .accountsPartial({
+        claim: claimPda(bob.publicKey),
+        claimant: bob.publicKey,
+        claimantAta: bobAta,
+        mint,
+        vault,
+        tokenProgram: TOKEN_PROGRAM_ID,
+        instructions: SYSVAR_INSTRUCTIONS_PUBKEY,
+      })
+      .instruction();
+
+    await expectReverted(
+      { revertedWith: { message: "0x1774" } },
+      sendIxs(context, [bob], aliceSigIx, bobClaimIx),
+    );
+
+    assert.equal((await getTokenBalance(bobAta)).toString(), "0");
+    assert.isNull(await context.banksClient.getAccount(claimPda(bob.publicKey)));
+    assert.equal(
+      (await getTokenBalance(vault)).toString(),
+      (initialVault - BigInt(amount.toString())).toString(),
+    );
+  });
+
+  it("refuses claim with a signature intended for another claimant", async () => {
+    const { context, program, mint, vault, signer, payer } = env;
+
     const alice = Keypair.generate();
     const bob = Keypair.generate();
     const amount = oneToken().muln(2);
@@ -1123,159 +1372,9 @@ describe("04-merkle-airdrop", () => {
       sendIxs(context, [bob], sigIx, claimIxAlicePda),
     );
 
-    // Verify Bob received 0 tokens and no claim account was created for Bob
     const bobBalance = await getTokenBalance(bobAta);
     assert.equal(bobBalance.toString(), "0");
-    const bobClaim = await context.banksClient.getAccount(
-      claimPda(bob.publicKey),
-    );
-    assert.isNull(bobClaim);
-
-    // Create ATA and fund Alice with SOL
-    const aliceAta = getAssociatedTokenAddressSync(mint, alice.publicKey);
-    await sendIxs(
-      context,
-      [payer],
-      SystemProgram.transfer({
-        fromPubkey: payer.publicKey,
-        toPubkey: alice.publicKey,
-        lamports: 10 * 1_000_000_000,
-      }),
-      createAssociatedTokenAccountInstruction(
-        payer.publicKey,
-        aliceAta,
-        alice.publicKey,
-        mint,
-      ),
-    );
-
-    // Intended recipient Alice claims successfully with the exact same signature
-    const claimIxAlice = await program.methods
-      .claimWithSignature(amount)
-      .accountsPartial({
-        claim: claimPda(alice.publicKey),
-        claimant: alice.publicKey,
-        claimantAta: aliceAta,
-        mint,
-        vault,
-        tokenProgram: TOKEN_PROGRAM_ID,
-        instructions: SYSVAR_INSTRUCTIONS_PUBKEY,
-      })
-      .instruction();
-
-    await sendIxs(context, [alice], sigIx, claimIxAlice);
-
-    // Confirm output: Alice received the tokens, Bob still has 0
-    const aliceFinalBalance = await getTokenBalance(aliceAta);
-    assert.equal(aliceFinalBalance.toString(), amount.toString());
-    const bobFinalBalance = await getTokenBalance(bobAta);
-    assert.equal(bobFinalBalance.toString(), "0");
-  });
-
-  it("refuses claim when signature for one user is used by another (cross-user signature replay)", async () => {
-    const { context, program, mint, vault, signer, payer } = env;
-
-    const alice = Keypair.generate();
-    const bob = Keypair.generate();
-    const amount = oneToken().muln(2);
-    const bobAta = getAssociatedTokenAddressSync(mint, bob.publicKey);
-
-    await sendIxs(
-      context,
-      [payer],
-      SystemProgram.transfer({
-        fromPubkey: payer.publicKey,
-        toPubkey: bob.publicKey,
-        lamports: 10 * 1_000_000_000,
-      }),
-      createAssociatedTokenAccountInstruction(
-        payer.publicKey,
-        bobAta,
-        bob.publicKey,
-        mint,
-      ),
-    );
-
-    const sigIx = buildClaimSignatureIx(
-      signer,
-      alice.publicKey,
-      amount,
-      program.programId,
-    );
-
-    const claimIxBobPda = await program.methods
-      .claimWithSignature(amount)
-      .accountsPartial({
-        claim: claimPda(bob.publicKey),
-        claimant: bob.publicKey,
-        claimantAta: bobAta,
-        mint,
-        vault,
-        tokenProgram: TOKEN_PROGRAM_ID,
-        instructions: SYSVAR_INSTRUCTIONS_PUBKEY,
-      })
-      .instruction();
-
-    await expectReverted(
-      { revertedWith: { message: "0x1774" } },
-      sendIxs(context, [bob], sigIx, claimIxBobPda),
-    );
-
-    const bobBalance = await getTokenBalance(bobAta);
-    assert.equal(bobBalance.toString(), "0");
-  });
-
-  it("refuses claim with a signature intended for another claimant", async () => {
-    const { context, program, mint, vault, signer, payer } = env;
-
-    const alice = Keypair.generate();
-    const bob = Keypair.generate();
-    const amount = oneToken().muln(2);
-    const bobAta = getAssociatedTokenAddressSync(mint, bob.publicKey);
-
-    await sendIxs(
-      context,
-      [payer],
-      SystemProgram.transfer({
-        fromPubkey: payer.publicKey,
-        toPubkey: bob.publicKey,
-        lamports: 10 * 1_000_000_000,
-      }),
-      createAssociatedTokenAccountInstruction(
-        payer.publicKey,
-        bobAta,
-        bob.publicKey,
-        mint,
-      ),
-    );
-
-    const sigIx = buildClaimSignatureIx(
-      signer,
-      alice.publicKey,
-      amount,
-      program.programId,
-    );
-
-    const claimIxBobPda = await program.methods
-      .claimWithSignature(amount)
-      .accountsPartial({
-        claim: claimPda(bob.publicKey),
-        claimant: bob.publicKey,
-        claimantAta: bobAta,
-        mint,
-        vault,
-        tokenProgram: TOKEN_PROGRAM_ID,
-        instructions: SYSVAR_INSTRUCTIONS_PUBKEY,
-      })
-      .instruction();
-
-    await expectReverted(
-      { revertedWith: { message: "0x1774" } },
-      sendIxs(context, [bob], sigIx, claimIxBobPda),
-    );
-
-    const bobBalance = await getTokenBalance(bobAta);
-    assert.equal(bobBalance.toString(), "0");
+    assert.isNull(await context.banksClient.getAccount(claimPda(bob.publicKey)));
   });
 
   it("refuses claim with zero amount", async () => {

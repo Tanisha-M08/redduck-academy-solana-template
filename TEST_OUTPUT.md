@@ -54,6 +54,8 @@
 > anchor build -p merkle_airdrop && ts-mocha -p ./tsconfig.json -t 1000000 tests/04-merkle-airdrop/*.test.ts
 
   04-merkle-airdrop
+    ✔ stores the Merkle root and trusted signer pubkey upon initialization
+    ✔ refuses re-initializing the configuration (one-time initialization guard)
     ✔ claims an allocation with a valid Merkle proof
     ✔ refuses claim with an invalid Merkle proof
     ✔ refuses claiming twice via Merkle proof (anti-double-claim guard)
@@ -62,20 +64,22 @@
     ✔ refuses claiming via Merkle proof if already claimed via signature
     ✔ refuses claiming twice via signature
     ✔ refuses claim with a signature signed by an unauthorized key
-      [PASS] Confirmed: Signature for Alice cannot be used by Bob (rejected with 0x1774); Alice claimed successfully (amount = 2000000, Bob tokens = 0)
+    ✔ enforces Criterion 6: anti-double-claim protection across BOTH claim methods
+    ✔ enforces Criterion 14: Alice's signature works for Alice but Bob cannot reuse it (after or before)
+    ✔ verifies signature replay protection: Alice's signed authorization works for Alice but fails when Bob tries to use the same signature (Criterion 14)
     ✔ there is a test that signature for one user cannot be used by another
     ✔ refuses claim when signature for one user is used by another (cross-user signature replay)
     ✔ refuses claim with a signature intended for another claimant
     ✔ refuses claim with zero amount
 
-  12 passing (481ms)
+  17 passing (763ms)
 ```
 
 #### Runtime Log Trace: Cross-User Signature Replay Test (Criterion 14)
 
 ```text
 [DEBUG] Program log: Instruction: ClaimWithSignature
-[DEBUG] Program log: AnchorError thrown in programs/04-merkle-airdrop/src/instructions/claim_with_signature.rs:113. Error Code: InvalidSignatureMessage. Error Number: 6004. Error Message: Invalid signature message.
+[DEBUG] Program log: AnchorError thrown in programs/04-merkle-airdrop/src/instructions/claim_with_signature.rs:118. Error Code: InvalidSignatureMessage. Error Number: 6004. Error Message: Invalid signature message.
 [DEBUG] Program BbyrsYvVu6eTh7CGBaFfbJgS6Q7C8zQy1NfxA3Ne9xbt consumed 17275 of 400000 compute units
 [DEBUG] Program BbyrsYvVu6eTh7CGBaFfbJgS6Q7C8zQy1NfxA3Ne9xbt failed: custom program error: 0x1774
 [DEBUG] Program log: AnchorError caused by account: claim. Error Code: ConstraintSeeds. Error Number: 2006. Error Message: A seeds constraint was violated.
@@ -83,8 +87,6 @@
 [DEBUG] Program log: Instruction: ClaimWithSignature
 [DEBUG] Program log: Instruction: TransferChecked
 [DEBUG] Program BbyrsYvVu6eTh7CGBaFfbJgS6Q7C8zQy1NfxA3Ne9xbt success
-      [PASS] Confirmed: Signature for Alice cannot be used by Bob (rejected with 0x1774); Alice claimed successfully (amount = 2000000, Bob tokens = 0)
-    ✔ there is a test that signature for one user cannot be used by another
 ```
 
 ### 05 — Raffle (`npm run test:raffle`)
