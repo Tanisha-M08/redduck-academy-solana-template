@@ -99,7 +99,7 @@ npm test
 Underlying execution command:
 
 ```bash
-anchor build && ts-mocha -p ./tsconfig.json -t 1000000 tests/**/*.test.ts
+anchor build -p donor_vault && anchor build -p staking && anchor build -p merkle_airdrop && ts-mocha -p ./tsconfig.json -t 1000000 tests/**/*.test.ts
 ```
 
 ### Test Cases Executed (47/47 Passing)
