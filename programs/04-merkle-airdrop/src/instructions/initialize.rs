@@ -34,7 +34,11 @@ pub struct Initialize<'info> {
     pub system_program: Program<'info, System>,
 }
 
-pub fn initialize(ctx: Context<Initialize>, merkle_root: [u8; 32], signer: Pubkey) -> Result<()> {
+pub fn initialize(
+    ctx: Context<Initialize>,
+    merkle_root: [u8; 32],
+    signer: Pubkey,
+) -> Result<()> {
     ctx.accounts.config.set_inner(Config {
         mint: ctx.accounts.mint.key(),
         vault: ctx.accounts.vault.key(),

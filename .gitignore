@@ -4,17 +4,6 @@ node_modules
 # Anchor / Solana build artifacts
 .anchor
 target
-!target/deploy/
-target/deploy/*
-!target/deploy/raffle.so
-!target/deploy/mock_vrf.so
-!target/deploy/raffle-keypair.json
-!target/idl/
-target/idl/*
-!target/idl/raffle.json
-!target/types/
-target/types/*
-!target/types/raffle.ts
 test-ledger
 **/*.rs.bk
 

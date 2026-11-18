@@ -2,7 +2,7 @@ use anchor_lang::prelude::*;
 
 /// Loyalty tier of a donor. The variant order is the on-chain/return encoding —
 /// don't change it.
-#[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, PartialEq, Eq, Debug, InitSpace)]
+#[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, PartialEq, Eq, Debug)]
 pub enum Tier {
     None,
     Bronze,
@@ -13,16 +13,17 @@ pub enum Tier {
 
 impl Tier {
     pub fn from_total(total: u64) -> Self {
+        const SOL: u64 = 1_000_000_000;
         if total == 0 {
-            Self::None
-        } else if total < 100_000_000 {
-            Self::Bronze
-        } else if total < 1_000_000_000 {
-            Self::Silver
-        } else if total < 10_000_000_000 {
-            Self::Gold
+            Tier::None
+        } else if total < SOL / 10 {
+            Tier::Bronze
+        } else if total < SOL {
+            Tier::Silver
+        } else if total < 10 * SOL {
+            Tier::Gold
         } else {
-            Self::Platinum
+            Tier::Platinum
         }
     }
 }

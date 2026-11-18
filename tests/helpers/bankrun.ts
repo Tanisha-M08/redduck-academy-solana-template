@@ -25,7 +25,7 @@ export const initBankrun = async <IDL extends Idl>(idl: IDL) => {
   const accounts: Keypair[] = [];
   const accountsToInject: AddedAccount[] = [];
 
-  for (let i = 0; i < 50; i++) {
+  for (let i = 0; i < 200; i++) {
     const keypair = Keypair.generate();
     accounts.push(keypair);
 
@@ -119,10 +119,7 @@ export const simulateReturnData = async (
 };
 
 /** Set the bank's clock to `timestamp` (unix seconds), keeping slot/epoch. */
-export const timeTravel = async (
-  ctx: ProgramTestContext,
-  timestamp: bigint,
-) => {
+export const timeTravel = async (ctx: ProgramTestContext, timestamp: bigint) => {
   const clock = await ctx.banksClient.getClock();
   ctx.setClock(
     new Clock(

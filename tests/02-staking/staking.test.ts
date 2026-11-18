@@ -35,7 +35,9 @@ describe("02-staking", () => {
     )[0];
   };
 
-  const getTokenBalance = async (address: PublicKey): Promise<bigint> => {
+  const getTokenBalance = async (
+    address: PublicKey,
+  ): Promise<bigint> => {
     const info = await env.context.banksClient.getAccount(address);
     if (!info) return 0n;
     const decoded = AccountLayout.decode(info.data);
@@ -174,8 +176,15 @@ describe("02-staking", () => {
   });
 
   it("claims vRDDK after 3-day lock duration and unstakes RDDK", async () => {
-    const { context, program, payer, rddkMint, userRddkAta, vrddkMint, vault } =
-      env;
+    const {
+      context,
+      program,
+      payer,
+      rddkMint,
+      userRddkAta,
+      vrddkMint,
+      vault,
+    } = env;
     const stakeAmount = oneToken().muln(100);
     const position = stakePosition(payer.publicKey, 0);
 
@@ -268,7 +277,7 @@ describe("02-staking", () => {
     const vrddkAfterUnstake = await getTokenBalance(userVrddkAta);
     assert.equal(
       vrddkAfterUnstake.toString(),
-      stakeAmount.sub(unstakeAmount).toString(),
+      (stakeAmount.sub(unstakeAmount)).toString(),
     );
 
     const rddkAfterUnstake = await getTokenBalance(userRddkAta);
@@ -300,8 +309,15 @@ describe("02-staking", () => {
   });
 
   it("refuses unstake with zero amount", async () => {
-    const { context, program, payer, rddkMint, userRddkAta, vrddkMint, vault } =
-      env;
+    const {
+      context,
+      program,
+      payer,
+      rddkMint,
+      userRddkAta,
+      vrddkMint,
+      vault,
+    } = env;
 
     const userVrddkAta = getAssociatedTokenAddressSync(
       vrddkMint,
@@ -331,7 +347,14 @@ describe("02-staking", () => {
   });
 
   it("enforces that vRDDK is non-transferable", async () => {
-    const { context, program, payer, rddkMint, userRddkAta, vrddkMint } = env;
+    const {
+      context,
+      program,
+      payer,
+      rddkMint,
+      userRddkAta,
+      vrddkMint,
+    } = env;
     const position = stakePosition(payer.publicKey, 0);
 
     // Stake & fast-forward to claim vRDDK

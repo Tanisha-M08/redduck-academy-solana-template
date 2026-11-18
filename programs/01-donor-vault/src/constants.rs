@@ -14,3 +14,4 @@ pub const DONOR_SEED: &[u8] = b"donor";
 pub const DONATION_SEED: &[u8] = b"donation";
 
 pub const MAX_MESSAGE_LEN: usize = 200;
+

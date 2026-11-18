@@ -1,5 +1,3 @@
-#![allow(ambiguous_glob_reexports)]
-
 use anchor_lang::prelude::*;
 
 pub mod constants;
@@ -13,6 +11,7 @@ pub use instructions::*;
 pub use state::*;
 
 declare_id!("GhAdtT9Vd5Gst89DyG8jShfgygJUdNcoQGGS5fGyZUVT");
+
 
 #[program]
 pub mod donor_vault {

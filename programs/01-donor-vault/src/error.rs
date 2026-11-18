@@ -4,7 +4,7 @@ use anchor_lang::prelude::*;
 pub enum DonorVaultError {
     #[msg("Donation amount must be greater than zero")]
     ZeroDonation,
-    #[msg("Donation message exceeds maximum length")]
+    #[msg("Message length exceeds maximum allowed length")]
     MessageTooLong,
     #[msg("Math overflow")]
     MathOverflow,
