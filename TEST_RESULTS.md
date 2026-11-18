@@ -179,5 +179,9 @@ A GitHub Actions workflow is configured at `.github/workflows/test.yml`:
   1. `npm run test:merkleAirdrop`: Verifies all 17 integration tests pass for `04-merkle-airdrop` (Criteria 6, 14, 16).
   2. `npm test`: Verifies the complete workspace test suite (all 4 programs, 47/47 tests passing) passes with exit code 0 (Criterion 17).
 - **CI Workflow Link:** [GitHub Actions Runs](https://github.com/Tanisha-M08/redduck-academy-solana-template/actions)
-  - All tests execute genuinely end-to-end with zero mocked or skipped tests.
+- **Verified Passing Run:** [Run 44354990407 (Job 134980566567)](https://github.com/Tanisha-M08/redduck-academy-solana-template/actions/runs/44354990407)
+  - `npm run test:merkleAirdrop`: 17 passing (2s)
+  - `npm test`: 47 passing (4s)
+  - Conclusion: `success`
+  - All tests execute genuinely end-to-end on GitHub Actions with zero mocked or skipped tests.
   - Verified exit code: `0` across both steps.
