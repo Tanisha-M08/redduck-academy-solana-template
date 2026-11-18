@@ -24,11 +24,6 @@ jobs:
       - name: Setup Rust stable
         uses: dtolnay/rust-toolchain@stable
 
-      - name: Install system dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y pkg-config build-essential libudev-dev llvm libclang-dev protobuf-compiler libssl-dev
-
       - name: Install Solana CLI (Agave v2.1.21)
         run: |
           sh -c "$(curl -sSfL https://release.anza.xyz/v2.1.21/install)"
