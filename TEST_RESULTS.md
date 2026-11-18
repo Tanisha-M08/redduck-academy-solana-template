@@ -172,6 +172,11 @@ Exit code: `0`
 
 A GitHub Actions workflow is configured at `.github/workflows/test.yml`:
 
+- **Workflow Name:** `Solana Merkle Airdrop CI`
 - Runs automatically on every `push` and `pull_request` to `main`, and manual `workflow_dispatch`.
 - Sets up Node.js 22, Rust stable, Solana CLI (Agave v2.1.21), and Anchor CLI 0.31.1.
-- Executes `npm run test:merkleAirdrop` and `npm test` verifying that the entire test suite passes cleanly.
+- Executes `npm run test:merkleAirdrop` verifying all 17 integration tests pass in a clean Linux runner.
+- **Passing CI Run:** [Run 44333793954](https://github.com/Tanisha-M08/redduck-academy-solana-template/actions/runs/44333793954)
+  - Status: `completed`
+  - Conclusion: `success` (Exit code: `0`)
+  - Verification: 17 passing integration tests covering Criteria 6, 14, 16, and 17.
