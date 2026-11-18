@@ -119,7 +119,10 @@ export const simulateReturnData = async (
 };
 
 /** Set the bank's clock to `timestamp` (unix seconds), keeping slot/epoch. */
-export const timeTravel = async (ctx: ProgramTestContext, timestamp: bigint) => {
+export const timeTravel = async (
+  ctx: ProgramTestContext,
+  timestamp: bigint,
+) => {
   const clock = await ctx.banksClient.getClock();
   ctx.setClock(
     new Clock(

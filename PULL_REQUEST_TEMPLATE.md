@@ -4,7 +4,7 @@
 
 <!-- Describe the change and why it's needed. New feature or non-obvious fix? Consider opening an issue to discuss the approach first — it merges faster than a PR that needs to change direction mid-review. -->
 
-Fixes #___ <!-- delete this line if there's no issue -->
+Fixes #\_\_\_ <!-- delete this line if there's no issue -->
 
 ## Type of change
 

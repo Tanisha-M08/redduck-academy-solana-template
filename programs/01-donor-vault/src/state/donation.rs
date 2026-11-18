@@ -1,5 +1,5 @@
-use anchor_lang::prelude::*;
 use crate::constants::MAX_MESSAGE_LEN;
+use anchor_lang::prelude::*;
 
 #[account]
 #[derive(InitSpace)]

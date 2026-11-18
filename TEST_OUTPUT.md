@@ -72,6 +72,7 @@
 ```
 
 #### Runtime Log Trace: Cross-User Signature Replay Test (Criterion 14)
+
 ```text
 [DEBUG] Program log: Instruction: ClaimWithSignature
 [DEBUG] Program log: AnchorError thrown in programs/04-merkle-airdrop/src/instructions/claim_with_signature.rs:113. Error Code: InvalidSignatureMessage. Error Number: 6004. Error Message: Invalid signature message.

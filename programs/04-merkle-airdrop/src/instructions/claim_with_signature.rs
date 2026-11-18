@@ -56,10 +56,9 @@ pub fn claim_with_signature(ctx: Context<ClaimWithSignature>, amount: u64) -> Re
     require!(amount > 0, MerkleError::ZeroAmount);
 
     // 1. Inspect preceding Ed25519 instruction in current transaction
-    let current_index = ix_sysvar::load_current_index_checked(
-        &ctx.accounts.instructions.to_account_info(),
-    )
-    .map_err(|_| MerkleError::SignatureVerificationFailed)?;
+    let current_index =
+        ix_sysvar::load_current_index_checked(&ctx.accounts.instructions.to_account_info())
+            .map_err(|_| MerkleError::SignatureVerificationFailed)?;
 
     require!(current_index > 0, MerkleError::SignatureVerificationFailed);
 
@@ -69,7 +68,11 @@ pub fn claim_with_signature(ctx: Context<ClaimWithSignature>, amount: u64) -> Re
     )
     .map_err(|_| MerkleError::SignatureVerificationFailed)?;
 
-    require_keys_eq!(sig_ix.program_id, ed25519_program::ID, MerkleError::NotEd25519);
+    require_keys_eq!(
+        sig_ix.program_id,
+        ed25519_program::ID,
+        MerkleError::NotEd25519
+    );
 
     let d = &sig_ix.data;
     require!(d.len() >= 16 && d[0] == 1, MerkleError::MalformedEd25519);

@@ -68,7 +68,11 @@ pub fn claim(ctx: Context<ClaimPrize>, entry_index: u64) -> Result<()> {
         winning_ticket >= entry.start_ticket && winning_ticket < entry.end_ticket,
         RaffleError::NotWinner
     );
-    require_keys_eq!(ctx.accounts.winner.key(), entry.player, RaffleError::NotWinner);
+    require_keys_eq!(
+        ctx.accounts.winner.key(),
+        entry.player,
+        RaffleError::NotWinner
+    );
 
     raffle.claimed = true;
 

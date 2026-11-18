@@ -19,15 +19,15 @@ An Anchor + Rust learning template by [RedDuck](https://redduck.io/?utm_source=g
 
 ## Built with
 
-| Area | Technology |
-| --- | --- |
-| Programs | Rust + [Anchor](https://www.anchor-lang.com/) 0.31.1 |
-| Toolchain | [Solana CLI](https://docs.anza.xyz/cli/install) 2.x, Solana platform tools |
-| Tests | [`solana-bankrun`](https://kevinheavey.github.io/solana-bankrun/) + `anchor-bankrun`, Mocha + Chai via `ts-mocha` |
-| Client | [`@coral-xyz/anchor`](https://www.anchor-lang.com/), `@solana/web3.js`, `@solana/spl-token` |
-| Task libraries | `merkletreejs` for the airdrop task |
-| Quality | `cargo fmt` + Clippy (`-D warnings`), Prettier |
-| Runtime | Node.js 20+ (22 LTS recommended, see `.nvmrc`), npm, TypeScript |
+| Area           | Technology                                                                                                        |
+| -------------- | ----------------------------------------------------------------------------------------------------------------- |
+| Programs       | Rust + [Anchor](https://www.anchor-lang.com/) 0.31.1                                                              |
+| Toolchain      | [Solana CLI](https://docs.anza.xyz/cli/install) 2.x, Solana platform tools                                        |
+| Tests          | [`solana-bankrun`](https://kevinheavey.github.io/solana-bankrun/) + `anchor-bankrun`, Mocha + Chai via `ts-mocha` |
+| Client         | [`@coral-xyz/anchor`](https://www.anchor-lang.com/), `@solana/web3.js`, `@solana/spl-token`                       |
+| Task libraries | `merkletreejs` for the airdrop task                                                                               |
+| Quality        | `cargo fmt` + Clippy (`-D warnings`), Prettier                                                                    |
+| Runtime        | Node.js 20+ (22 LTS recommended, see `.nvmrc`), npm, TypeScript                                                   |
 
 New here? **[INSTALL.md](INSTALL.md)** walks through installing the whole toolchain — Rust, Solana CLI, Anchor, Node — from scratch.
 
@@ -63,13 +63,13 @@ Per-task scripts compile a single crate (`anchor build -p <crate>`) and each ban
 
 ## Tasks
 
-| # | Task | Program crate | Status |
-| --- | --- | --- | --- |
-| 01 | [`01-donor-vault`](programs/01-donor-vault/) | `donor_vault` | complete (17/17 tests passing) |
-| 02 | [`02-staking`](programs/02-staking/) | `staking` | complete (7/7 tests passing) |
-| 03 | _reserved_ | — | — |
-| 04 | [`04-merkle-airdrop`](programs/04-merkle-airdrop/) | `merkle_airdrop` | complete (10/10 tests passing) |
-| 05 | [`05-raffle`](programs/05-raffle/) | `raffle` | complete (6/6 tests passing) |
+| #   | Task                                               | Program crate    | Status                         |
+| --- | -------------------------------------------------- | ---------------- | ------------------------------ |
+| 01  | [`01-donor-vault`](programs/01-donor-vault/)       | `donor_vault`    | complete (17/17 tests passing) |
+| 02  | [`02-staking`](programs/02-staking/)               | `staking`        | complete (7/7 tests passing)   |
+| 03  | _reserved_                                         | —                | —                              |
+| 04  | [`04-merkle-airdrop`](programs/04-merkle-airdrop/) | `merkle_airdrop` | complete (10/10 tests passing) |
+| 05  | [`05-raffle`](programs/05-raffle/)                 | `raffle`         | complete (6/6 tests passing)   |
 
 ## Test Suite Execution Evidence (All Passing)
 
@@ -98,6 +98,7 @@ Per-task scripts compile a single crate (`anchor build -p <crate>`) and each ban
 ```
 
 #### Runtime Log Trace: Cross-User Signature Replay Test (Criterion 14)
+
 ```text
 [DEBUG] Program log: Instruction: ClaimWithSignature
 [DEBUG] Program log: AnchorError thrown in programs/04-merkle-airdrop/src/instructions/claim_with_signature.rs:113. Error Code: InvalidSignatureMessage. Error Number: 6004. Error Message: Invalid signature message.

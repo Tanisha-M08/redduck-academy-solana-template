@@ -4,13 +4,13 @@ This project is an **Anchor + Rust Solana program template** with TypeScript tes
 (`ts-mocha` + `solana-bankrun`). To build and test it locally you need the following
 toolchain:
 
-| Tool         | Version used by this repo | Why                                  |
-| ------------ | ------------------------- | ------------------------------------ |
-| Rust + Cargo | latest stable             | Compiles the on-chain programs       |
-| Solana CLI   | `stable` (Agave)          | Build, deploy, local validator, keys |
-| Anchor CLI   | `0.31.1`                  | Framework used by the programs       |
-| Node.js      | LTS (≥ 20, 22 recommended) | Runs the TypeScript test suite      |
-| npm          | bundled with Node.js      | Installs JS dependencies             |
+| Tool         | Version used by this repo  | Why                                  |
+| ------------ | -------------------------- | ------------------------------------ |
+| Rust + Cargo | latest stable              | Compiles the on-chain programs       |
+| Solana CLI   | `stable` (Agave)           | Build, deploy, local validator, keys |
+| Anchor CLI   | `0.31.1`                   | Framework used by the programs       |
+| Node.js      | LTS (≥ 20, 22 recommended) | Runs the TypeScript test suite       |
+| npm          | bundled with Node.js       | Installs JS dependencies             |
 
 > The required versions come from `Anchor.toml` (`anchor_version = "0.31.1"`) and
 > `package.json`.

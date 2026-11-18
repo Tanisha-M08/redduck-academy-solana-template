@@ -16,7 +16,7 @@ list — you give each item its own account.** A donation is its own PDA, seeded
 by the donor and a zero-based index (the donor's current `donation_count`), and
 account sizes come from `#[derive(InitSpace)]` — never hand-counted. Funds move
 as explicit lamport transfers into the vault PDA (`1 SOL` = 1,000,000,000
-lamports). The only on-chain getter is `tier_of`, which *computes* a value;
+lamports). The only on-chain getter is `tier_of`, which _computes_ a value;
 anything stored is read by fetching the account, not through a getter.
 
 ## What you're given

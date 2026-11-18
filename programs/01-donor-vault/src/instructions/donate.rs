@@ -40,7 +40,10 @@ pub struct Donate<'info> {
 
 pub fn donate(ctx: Context<Donate>, amount: u64, message: String) -> Result<()> {
     require!(amount > 0, DonorVaultError::ZeroDonation);
-    require!(message.len() <= MAX_MESSAGE_LEN, DonorVaultError::MessageTooLong);
+    require!(
+        message.len() <= MAX_MESSAGE_LEN,
+        DonorVaultError::MessageTooLong
+    );
 
     let vault = &mut ctx.accounts.vault;
     let donor_record = &mut ctx.accounts.donor_record;

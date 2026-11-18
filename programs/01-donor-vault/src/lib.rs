@@ -14,7 +14,6 @@ pub use state::*;
 
 declare_id!("GhAdtT9Vd5Gst89DyG8jShfgygJUdNcoQGGS5fGyZUVT");
 
-
 #[program]
 pub mod donor_vault {
     use super::*;

@@ -61,7 +61,7 @@ describe("05-raffle", () => {
 
     const [alice, bob, charlie] = funded.slice(0, 3);
     const aliceAmount = oneToken().muln(10); // 10 tokens
-    const bobAmount = oneToken().muln(20);   // 20 tokens
+    const bobAmount = oneToken().muln(20); // 20 tokens
     const charlieAmount = oneToken().muln(70); // 70 tokens
     const totalPot = oneToken().muln(100);
 

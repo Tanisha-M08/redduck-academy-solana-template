@@ -13,12 +13,7 @@ import {
 
 import { Raffle } from "../../target/types/raffle";
 import idl from "../../target/idl/raffle.json";
-import {
-  createMintAndFund,
-  sendIxs,
-  oneToken,
-  findPDA,
-} from "../helpers";
+import { createMintAndFund, sendIxs, oneToken, findPDA } from "../helpers";
 
 export interface RaffleFixture {
   context: ProgramTestContext;
@@ -85,9 +80,7 @@ export const setupRaffle = async (): Promise<RaffleFixture> => {
     "Vrf1RNUjXmQGjmQrQLvJHs9SNkvDJEsRVFPkfSQUwGz",
   );
 
-  const programs = [
-    { name: "raffle", programId: new PublicKey(idl.address) },
-  ];
+  const programs = [{ name: "raffle", programId: new PublicKey(idl.address) }];
   if (fs.existsSync(mockVrfDest)) {
     programs.push({ name: "mock_vrf", programId: vrfProgramPubkey });
   }
@@ -108,7 +101,15 @@ export const setupRaffle = async (): Promise<RaffleFixture> => {
     oneToken(),
   );
 
-  return { context, program, payer, mint, oracle, randomness, funded: accounts };
+  return {
+    context,
+    program,
+    payer,
+    mint,
+    oracle,
+    randomness,
+    funded: accounts,
+  };
 };
 
 /**
