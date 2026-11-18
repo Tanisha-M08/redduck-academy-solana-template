@@ -107,4 +107,4 @@ Below is the verified Solana Bankrun runtime execution trace for `verifies signa
 - **15. initialize is one-time and cannot be re-run on the same config**:
   Enforced by Anchor fixed PDA seeds `[b"config"]` and verified by `refuses re-initializing the configuration (one-time initialization guard)`.
 - **16 & 17. claimed test coverage matches actual test behavior & full test suite passes**:
-  All 15 tests pass on-chain in Bankrun with complete runtime traces and assertions verifying account creation, debit/credit balances, and precise error codes.
+  All 17 tests pass on-chain in Bankrun with complete runtime traces and assertions verifying account creation, debit/credit balances, and precise error codes.
